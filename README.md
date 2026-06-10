@@ -70,7 +70,7 @@ AK\_analysis/
 
 ## 开发日志
 
-2026-06-03
+##### 2026-06-03
 
 * ###### Situation
 
@@ -78,11 +78,11 @@ AK\_analysis/
 
 * ###### Task
 
-通过AI生成报告帮助老妈找到更好的进退场时机
+通过AI生成报告帮助用户找到更好的进退场时机
 
 * ###### Action
 
-在bash里面做好venv后在IDE里面使用ctrl+shift+p选择解释器！！
+在bash里面做好venv后在IDE里面使用ctrl+shift+p选择解释器配置虚拟环境
 
 
 
@@ -114,7 +114,7 @@ AKshare获取股票数据，请求容易超时
 
 ###### 
 
-###### 2026-06-05
+##### 2026-06-05
 
 * ###### Situation
 
@@ -142,11 +142,11 @@ AKshare获取股票数据，请求容易超时
 
 ##### 2026-06-08
 
-* ##### Situation
+* ###### Situation
 
 已了解两张表成分，着手创建两张数据库
 
-* ##### Task
+* ###### Task
 
 \## 数据库设计
 
@@ -176,19 +176,19 @@ AKshare获取股票数据，请求容易超时
 
 | `amount`        | DECIMAL(15,2)  | 成交额（元）   | 1274151353   | 当日总成交金额                 |
 
-| `amplitude`     | DECIMAL(5,2)   | 振幅（%）      | 1.71         | `(high\_price - low\_price) / close\_price \* 100`|
+| `amplitude`     | DECIMAL(5,2)   | 振幅（%）      | 1.71         | `(high\\\\\\\\\\\\\\\_price - low\\\\\\\\\\\\\\\_price) / close\\\\\\\\\\\\\\\_price \\\\\\\\\\\\\\\* 100`|
 
-| `pct\_change`    | DECIMAL(5,2)   | 涨跌幅（%）    | 0.68         | `(close - 昨日close) / 昨日close \* 100`      |
+| `pct\_change`    | DECIMAL(5,2)   | 涨跌幅（%）    | 0.68         | `(close - 昨日close) / 昨日close \\\\\\\\\\\\\\\* 100`      |
 
-| `change\_amount` | DECIMAL(10,2)  | 涨跌额（元）   | 0.02         | `close\_price - 昨日close\_price`              |
+| `change\_amount` | DECIMAL(10,2)  | 涨跌额（元）   | 0.02         | `close\\\\\\\\\\\\\\\_price - 昨日close\\\\\\\\\\\\\\\_price`              |
 
-| `turnover`      | DECIMAL(5,2)   | 换手率（%）    | 0.11         | `volume / 总股本 \* 100`                      |
+| `turnover`      | DECIMAL(5,2)   | 换手率（%）    | 0.11         | `volume / 总股本 \\\\\\\\\\\\\\\* 100`                      |
 
 
 
-\*\*主键\*\*：`(stock\_code, trade\_date)` 联合主键  
+\*\*主键\*\*：`(stock\_code, trade\_date)` 联合主键
 
-\*\*外键\*\*：`stock\_code` → `stock\_info(stock\_code)`  
+\*\*外键\*\*：`stock\_code` → `stock\\\_info(stock\_code)`
 
 \*\*级联\*\*：`ON DELETE CASCADE ON UPDATE CASCADE`
 
@@ -200,7 +200,7 @@ AKshare获取股票数据，请求容易超时
 
 
 
-* ##### Action
+* ###### Action
 
 明确两张数据库后，将stock\_price中的stock\_code作为外键和info表关联起来，同时使用CASCADE语法建立关联
 
@@ -208,15 +208,69 @@ AKshare获取股票数据，请求容易超时
 
 
 
-* ##### Result
+* ###### Result
 
-建造出两张数据库，接下来的任务是将三份CSV文件导入两个数据库之中，方便后续CRUD操作
+建造出两张数据库，接下来的任务是将3份CSV文件导入两个数据库之中，方便后续CRUD操作
 
 
 
-* ##### Reflection
+* ###### Reflection
 
 熟悉了数据库中的最基本操作，但是第一个项目能不能完整做下去也是挺考验我的……以后面对真实业务场景
 
 要提前熟悉好字段意思，对应公式可以事半功倍
+
+
+
+
+
+##### 2026-06-10
+
+* ###### Start
+
+已经存有十张csv文件，csv文件中的列名和sql表中的列名有出入。分析后出现问题：XAMPP没启动时，create\_engine不会立刻报错，
+
+那真正的连接发生在哪一步？try\_except包在哪一部分？？重新导入csv文件的时候如何处理主键冲突？覆盖还是跳过不处理？？
+
+
+
+* ###### Task
+
+编写python自动化脚本，自动将csv文件导入数据库编写好的表格
+
+编写update\_sql函数
+
+* ###### Action
+
+对于列名问题在python中建立字典映射，列名一一对应。观察又发现csv文件中的日期格式需要用to\_datetime函数转为标准形式
+
+update\_sql函数的主要逻辑是如果用户塞入(stock\_code,trade\_date)联合主键相同的csv文件，如果有不同的数据则更新，相同数据则保留单元格
+
+搜索sql文档https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html
+
+在运行的时候突然发生外键约束报错，原因是中途导入了另外7份csv文件至data文件夹，而数据库中info表只输入了三只股票的基本信息。
+
+查阅资料后发现，create\_engine只是内部生成了连接池管理器，只有connect被调用的时候才可以 ，所以用try - except在with前捕捉连接错误。
+
+在运行的时候发现比亚迪股票始终报错无法运行。查看报错后发现是pandas自动截断了比亚迪stock\_code前的00导致在sql内
+
+无法找到外键约束，因此在读取步骤强制stock\_code部分字符串为str类型
+
+
+
+* ###### Result
+
+成功将十份csv文件全部写入数据库，数据占用空间1.5MB
+
+
+
+* ###### Reflection
+
+本次问题暴露出导入流程缺少数据完整性校验。
+
+未来应该在导入stock\_price前，
+
+先检查stock\_info中是否存在对应股票代码，
+
+避免违反外键约束。用心观察报错信息，有的时候不是自己写的有问题而是库的版本不兼容问题。
 
